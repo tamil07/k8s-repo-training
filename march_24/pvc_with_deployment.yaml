@@ -1,0 +1,90 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: slow-io
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: io1
+  iopsPerGB: "100"
+  fsType: ext4
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tj-deployment
+  labels:
+    app: tj
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tj
+  template:
+    metadata:
+      labels:
+        app: tj
+    spec:
+      containers:
+      - name: tj
+        image: yanivomc/spring-music:latest
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: jb-claim
+---          
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+ name: jb-claim
+ annotations:
+   volume.beta.kubernetes.io/storage-class: "slow-io"
+spec:
+ accessModes:
+   - ReadWriteOnce
+ resources:
+   requests:
+     storage: 4Gi
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: slow-io
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: io1
+  iopsPerGB: "100"
+  fsType: ext4
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tj-deployment
+  labels:
+    app: tj
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tj
+  template:
+    metadata:
+      labels:
+        app: tj
+    spec:
+      containers:
+      - name: tj
+        image: yanivomc/spring-music:latest
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: jb-claim
